@@ -17,6 +17,7 @@
 import asyncio
 import builtins
 import importlib.util
+import inspect
 import os
 import queue
 import sys
@@ -25,6 +26,7 @@ import time
 import typing
 import traceback
 
+import aiohttp
 import regex
 import twitchirc
 
@@ -40,7 +42,7 @@ ENABLE_SELF_HIGHLIGHT = False
 
 def _format_message(channel, text, user_from='ProxyBot', display_name=None, badges=None, color='#FF69B4', emotes=None,
                     message_uuid=None, mod=False, room_id=1, sub=False, turbo=False, user_id=0, user_type='',
-                    send_time=None):
+                    send_time=None, disable_auto_multiple=False):
     if display_name is None:
         display_name = user_from
     if badges is None:
@@ -52,7 +54,7 @@ def _format_message(channel, text, user_from='ProxyBot', display_name=None, badg
     if send_time is None:
         send_time = round(time.time())
 
-    if '\n' in text:
+    if '\n' in text and not disable_auto_multiple:
         output = b''
         for line in text.split('\n'):
             output += _format_message(channel, line, user_from, display_name, badges, color, emotes, message_uuid, mod,
@@ -88,17 +90,6 @@ class OutputProcessor(generic.Replacement):
             if text.startswith('/$'):
                 text = text.replace('/$', '/w supibot $')
                 data = f'PRIVMSG {channel} :{text}\r\n'.encode('utf-8')
-                # input_queues[conn_id + ENABLE_DOUBLE_CONNECTION].put(
-                #     (
-                #         f'@badge-info=;badges=twitchbot/1;'
-                #         f'color=#FF69B4;display-name=BOT;emotes=;'
-                #         f'flags=;id={uuid.uuid4()!s};mod=1;room-id=1;'
-                #         f'subscriber=1;tmi-sent-ts={round(time.time())};'
-                #         f'turbo=0;user-id=31400525;user-type= '
-                #         f':TriHard!TriHard@TriHard.tmi.twitch.tv '
-                #         f'PRIVMSG #{channel} '
-                #         f':{text}\r\n'
-                #     ).encode('utf-8'))
                 input_queues[conn_id + ENABLE_DOUBLE_CONNECTION].put(
                     _format_message(channel, text, 'TriHard', 'BOT', badges=['twitchbot/1'], user_type='mod')
                 )
@@ -106,15 +97,152 @@ class OutputProcessor(generic.Replacement):
                 data = b''
                 input_queues[conn_id + ENABLE_DOUBLE_CONNECTION].put(
                     _format_message(channel, text='TriHard', user_from='bot', display_name='TriHard',
-                                    badges=[
-                                        'staff/1',
-                                        'anonymous-cheerer/1',
-                                        'bits/5000000',
-                                        'global_mod/1',
-                                        'sub-gift-leader/1',
-                                        'sub-gifter/1000',
-                                        'twitchbot/1'
-                                    ],
+                                    badges=['1979-revolution_1/1',
+                                            '60-seconds_1/1',
+                                            '60-seconds_2/1',
+                                            '60-seconds_3/1',
+                                            'H1Z1_1/1',
+                                            'admin/1',
+                                            'anomaly-2_1/1',
+                                            'anomaly-warzone-earth_1/1',
+                                            'anonymous-cheerer/1',
+                                            'axiom-verge_1/1',
+                                            'battlechefbrigade_1/1',
+                                            'battlechefbrigade_2/1',
+                                            'battlechefbrigade_3/1',
+                                            'battlerite_1/1',
+                                            'bits/1',
+                                            'bits/100',
+                                            'bits/1000',
+                                            'bits/10000',
+                                            'bits/100000',
+                                            'bits/1000000',
+                                            'bits/1250000',
+                                            'bits/1500000',
+                                            'bits/1750000',
+                                            'bits/200000',
+                                            'bits/2000000',
+                                            'bits/25000',
+                                            'bits/2500000',
+                                            'bits/300000',
+                                            'bits/3000000',
+                                            'bits/3500000',
+                                            'bits/400000',
+                                            'bits/4000000',
+                                            'bits/4500000',
+                                            'bits/5000',
+                                            'bits/50000',
+                                            'bits/500000',
+                                            'bits/5000000',
+                                            'bits/600000',
+                                            'bits/700000',
+                                            'bits/75000',
+                                            'bits/800000',
+                                            'bits/900000',
+                                            'bits-charity/1',
+                                            'bits-leader/1',
+                                            'bits-leader/2',
+                                            'bits-leader/3',
+                                            'brawlhalla_1/1',
+                                            'broadcaster/1',
+                                            'broken-age_1/1',
+                                            'bubsy-the-woolies_1/1',
+                                            'clip-champ/1',
+                                            'cuphead_1/1',
+                                            'darkest-dungeon_1/1',
+                                            'deceit_1/1',
+                                            'devil-may-cry-hd_1/1',
+                                            'devil-may-cry-hd_2/1',
+                                            'devil-may-cry-hd_3/1',
+                                            'devil-may-cry-hd_4/1',
+                                            'devilian_1/1',
+                                            'duelyst_1/1',
+                                            'duelyst_2/1',
+                                            'duelyst_3/1',
+                                            'duelyst_4/1',
+                                            'duelyst_5/1',
+                                            'duelyst_6/1',
+                                            'duelyst_7/1',
+                                            'enter-the-gungeon_1/1',
+                                            'eso_1/1',
+                                            'extension/1',
+                                            'firewatch_1/1',
+                                            'founder/0',
+                                            'frozen-cortext_1/1',
+                                            'frozen-synapse_1/1',
+                                            'getting-over-it_1/1',
+                                            'getting-over-it_2/1',
+                                            'glhf-pledge/1',
+                                            'global_mod/1',
+                                            'heavy-bullets_1/1',
+                                            'hello_neighbor_1/1',
+                                            'hype-train/1',
+                                            'hype-train/2',
+                                            'innerspace_1/1',
+                                            'innerspace_2/1',
+                                            'jackbox-party-pack_1/1',
+                                            'kingdom-new-lands_1/1',
+                                            'moderator/1',
+                                            'okhlos_1/1',
+                                            'overwatch-league-insider_1/1',
+                                            'overwatch-league-insider_2018B/1',
+                                            'overwatch-league-insider_2019A/1',
+                                            'overwatch-league-insider_2019A/2',
+                                            'overwatch-league-insider_2019B/1',
+                                            'overwatch-league-insider_2019B/2',
+                                            'overwatch-league-insider_2019B/3',
+                                            'overwatch-league-insider_2019B/4',
+                                            'overwatch-league-insider_2019B/5',
+                                            'partner/1',
+                                            'power-rangers/0',
+                                            'power-rangers/1',
+                                            'power-rangers/2',
+                                            'power-rangers/3',
+                                            'power-rangers/4',
+                                            'power-rangers/5',
+                                            'power-rangers/6',
+                                            'premium/1',
+                                            'psychonauts_1/1',
+                                            'raiden-v-directors-cut_1/1',
+                                            'rift_1/1',
+                                            'samusoffer_beta/0',
+                                            'staff/1',
+                                            'starbound_1/1',
+                                            'strafe_1/1',
+                                            'sub-gift-leader/1',
+                                            'sub-gift-leader/2',
+                                            'sub-gift-leader/3',
+                                            'sub-gifter/1',
+                                            'sub-gifter/10',
+                                            'sub-gifter/100',
+                                            'sub-gifter/1000',
+                                            'sub-gifter/25',
+                                            'sub-gifter/250',
+                                            'sub-gifter/5',
+                                            'sub-gifter/50',
+                                            'sub-gifter/500',
+                                            'subscriber/0',
+                                            'subscriber/1',
+                                            'superhot_1/1',
+                                            'the-surge_1/1',
+                                            'the-surge_2/1',
+                                            'the-surge_3/1',
+                                            'this-war-of-mine_1/1',
+                                            'titan-souls_1/1',
+                                            'treasure-adventure-world_1/1',
+                                            'turbo/1',
+                                            'twitchbot/1',
+                                            'twitchcon2017/1',
+                                            'twitchcon2018/1',
+                                            'twitchconAmsterdam2020/1',
+                                            'twitchconEU2019/1',
+                                            'twitchconNA2019/1',
+                                            'twitchconNA2020/1',
+                                            'tyranny_1/1',
+                                            'vga-champ-2017/1',
+                                            'vip/1',
+                                            'warcraft/alliance',
+                                            'warcraft/horde'],
                                     emotes=['120232:0-6'],
                                     mod=True, sub=True, turbo=True, user_type='mod', send_time=0
                                     )
@@ -126,7 +254,11 @@ class OutputProcessor(generic.Replacement):
                         matches.append(c)
                 if matches:
                     longest = max([(i, len(i)) for i in matches], key=lambda x: x[1])[0]
-                    o = commands[longest](text, channel)  # always prefer the longest match.
+                    # always prefer the longest match.
+                    if inspect.iscoroutinefunction(commands[longest]):
+                        o = await (commands[longest](text, channel))
+                    else:
+                        o = commands[longest](text, channel)
                     if isinstance(o, str):
                         input_queues[conn_id + ENABLE_DOUBLE_CONNECTION].put(
                             _format_message(channel, o)
@@ -153,12 +285,6 @@ def _maybe_init_queue(conn_id):
         input_queues[conn_id] = queue.Queue()
 
 
-# b'@badge-info=subscriber/2;badges=vip/1,subscriber/0,'
-# b'glhf-pledge/1;color=#DAA520;display-name=Mm2PL;emote-only=1;emotes=300436895:0-9;flags=;id=fd5309e1-07bd-4c9b
-# -b5ff'
-# b'-aee04a746d27;mod=0;room-id=31400525;subscriber=1;tmi-sent-ts=1577316708781;turbo=0;user-id=117691339;user
-# -type='
-# b':mm2pl!mm2pl@mm2pl.tmi.twitch.tv PRIVMSG #supinic :supiniOkay\r\n'
 last_user_state = {
 
 }
@@ -188,8 +314,6 @@ class InputProcessor(generic.Replacement):
         print(d)
         user_state = self.user_state_regex.match(d)
         if ENABLE_SELF_HIGHLIGHT and user_state:
-            print('USERSTATE!!!', repr(user_state.group('channel').lstrip(' #')))
-            print('USERSTATE!!!', repr(user_state.group('channel').lstrip(' #')))
             print('USERSTATE!!!', repr(user_state.group('channel').lstrip(' #')))
             last_user_state[user_state.group('channel').lstrip(' #')] = user_state
             d = regex.sub('color=((?:#[0-9A-F]{6})|)', 'color=#FF0000', d)
@@ -221,8 +345,8 @@ generic.regexs['out'].append(OutputProcessor())
 generic.regexs['in'].append(InputProcessor())
 
 
-def _localcommands(text):
-    return f'Local commands: /py, {", ".join(i for i in commands)}'
+def _localcommands(text, channel):
+    return f'Local commands: {", ".join(i for i in commands)}'
 
 
 commands['/localcommands'] = _localcommands
@@ -297,6 +421,26 @@ async def _eval_command(text, channel):
             current_eval_locals['_'] = ret_val
     return output
 
+
+commands['/py'] = _eval_command
+
+
+async def _command_recent_messages(text, channel):
+    async with aiohttp.request('get', f'https://recent-messages.robotty.de/api/v2/recent-messages/{channel}'
+                                      f'?clearchatToNotice=true') as request:
+        data = await request.json()
+        try:
+            return (
+                    _format_message(channel, '\x01ACTION ---------------------------------------', color='#AAAAAA')
+                    + _format_message(channel, '\x01ACTION Loaded recent messages!', color='#AAAAAA')
+                    + _format_message(channel, '\x01ACTION ---------------------------------------', color='#AAAAAA')
+                    + ('\r\n'.join(data['messages'])).encode('utf-8') + b'\r\n'
+            )
+        except:
+            return 'Unable to fetch recent messages.'
+
+
+commands['/recent'] = _command_recent_messages
 
 if __name__ == '__main__':
     asyncio.get_event_loop().run_until_complete(generic.main())
