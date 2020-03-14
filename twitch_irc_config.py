@@ -93,7 +93,7 @@ class OutputProcessor(generic.Replacement):
                 input_queues[conn_id + ENABLE_DOUBLE_CONNECTION].put(
                     _format_message(channel, text, 'TriHard', 'BOT', badges=['twitchbot/1'], user_type='mod')
                 )
-            elif text.startswith('/test'):
+            elif text.startswith('/test ') or text == '/test':
                 data = b''
                 input_queues[conn_id + ENABLE_DOUBLE_CONNECTION].put(
                     _format_message(channel, text='TriHard', user_from='bot', display_name='TriHard',
@@ -441,6 +441,13 @@ async def _command_recent_messages(text, channel):
 
 
 commands['/recent'] = _command_recent_messages
+
+
+async def _test_command(text, channel):
+    return _format_message(channel, text.replace('/test123', '', 1).replace('\\n', '\n'),
+                           disable_auto_multiple=True)
+
+commands['/test123'] = _test_command
 
 if __name__ == '__main__':
     asyncio.get_event_loop().run_until_complete(generic.main())
